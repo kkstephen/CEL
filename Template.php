@@ -11,6 +11,8 @@
  * @author			Philip Sturgeon
  * @license			http://philsturgeon.co.uk/code/dbad-license
  * @link			http://getsparks.org/packages/template/show
+ * 
+ * Modified by Stephen Yeung, Nov 2015, Hong Kong
  */
 class Template
 {
@@ -37,8 +39,6 @@ class Template
 	private $_parser_body_enabled = TRUE;
 
 	private $_theme_locations = array();
-
-	private $_is_mobile = FALSE;
 
 	// Minutes that cache will be alive for
 	private $cache_lifetime = 0;
@@ -114,12 +114,6 @@ class Template
 		// What controllers or methods are in use
 		$this->_controller	= $this->_ci->router->fetch_class();
 		$this->_method 		= $this->_ci->router->fetch_method();
-
-		// Load user agent library if not loaded
-		$this->_ci->load->library('user_agent');
-
-		// We'll want to know this later
-		$this->_is_mobile	= $this->_ci->agent->is_mobile();
 	}
 
 	// --------------------------------------------------------------------
@@ -255,10 +249,10 @@ class Template
 			// Added to $this->_data['template'] by refference
 			$template['body'] = $this->_body;			
 			
-		    $theme_view_path = self::_find_view_folder();
+		    $theme_view_path = $this->_find_view_folder();
 			
 			// Find the main body and 3rd param means parse if its a theme view (only if parser is enabled)
-			$this->_body =  self::_load_view('layouts/'.$this->_layout, $this->_data, $this->_parser_body_enabled, $theme_view_path);		
+			$this->_body =  $this->_load_view('layouts/'.$this->_layout, $this->_data, $this->_parser_body_enabled, $theme_view_path);		
 		}
 
 		// Want it returned or output to browser?
@@ -426,6 +420,7 @@ class Template
 	public function set_partial($name, $view, $data = array())
 	{
 		$this->_partials[$name] = array('view' => $view, 'data' => $data);
+		
 		return $this;
 	}
 
@@ -441,6 +436,7 @@ class Template
 	public function inject_partial($name, $string, $data = array())
 	{
 		$this->_partials[$name] = array('string' => $string, 'data' => $data);
+		
 		return $this;
 	}
 
@@ -456,6 +452,7 @@ class Template
 	public function set_breadcrumb($name, $uri = '')
 	{
 		$this->_breadcrumbs[] = array('name' => $name, 'uri' => $uri );
+		
 		return $this;
 	}
 
@@ -471,9 +468,9 @@ class Template
 	public function set_cache($minutes = 0)
 	{
 		$this->cache_lifetime = $minutes;
+		
 		return $this;
 	}
-
 
 	/**
 	 * enable_parser
@@ -486,6 +483,7 @@ class Template
 	public function enable_parser($bool)
 	{
 		$this->_parser_enabled = $bool;
+		
 		return $this;
 	}
 
@@ -500,6 +498,7 @@ class Template
 	public function enable_parser_body($bool)
 	{
 		$this->_parser_body_enabled = $bool;
+		
 		return $this;
 	}
 
@@ -564,14 +563,13 @@ class Template
 	{
 		$layouts = array();
 
-		foreach(glob(self::_find_view_folder().'layouts/*.*') as $layout)
+		foreach(glob($this->_find_view_folder().'layouts/*.*') as $layout)
 		{
 			$layouts[] = pathinfo($layout, PATHINFO_BASENAME);
 		}
 
 		return $layouts;
 	}
-
 
 	/**
 	 * get_layouts
@@ -613,13 +611,13 @@ class Template
 	public function layout_exists($layout)
 	{
 		// If there is a theme, check it exists in there
-		if ( !empty($this->_theme) && in_array($layout, self::get_theme_layouts()))
+		if ( !empty($this->_theme) && in_array($layout, $this->get_theme_layouts()))
 		{
 			return TRUE;
 		}
 
 		// Otherwise look in the normal places
-		return file_exists(self::_find_view_folder().'layouts/' . $layout . self::_ext($layout));
+		return file_exists($this->_find_view_folder().'layouts/' . $layout . $this->_ext($layout));
 	}
 
 	/**
@@ -680,16 +678,16 @@ class Template
 
 				foreach ($theme_views as $theme_view)
 				{
-					if (file_exists($location . $theme_view . self::_ext($theme_view)))
+					if (file_exists($location . $theme_view . $this->_ext($theme_view)))
 					{
-						return self::_load_view($theme_view, $this->_data + $data, $parse_view, $location);
+						return $this->_load_view($theme_view, $this->_data + $data, $parse_view, $location);
 					}
 				}
 			}
 		}
 
 		// Not found it yet? Just load, its either in the module or root view
-		return self::_load_view($view, $this->_data + $data, $parse_view);
+		return $this->_load_view($view, $this->_data + $data, $parse_view);
 	}
 
 	private function _load_view($view, array $data, $parse_view = TRUE, $override_view_path = NULL)
@@ -701,7 +699,7 @@ class Template
 			{
 				// Load content and pass through the parser
 				$content = $this->_ci->parser->parse_string($this->_ci->load->file(
-					$override_view_path.$view.self::_ext($view), 
+					$override_view_path.$view.$this->_ext($view), 
 					TRUE
 				), $data, TRUE);
 			}
@@ -712,7 +710,7 @@ class Template
 				
 				// Load it directly, bypassing $this->load->view() as ME resets _ci_view
 				$content = $this->_ci->load->file(
-					$override_view_path.$view.self::_ext($view),
+					$override_view_path.$view.$this->_ext($view),
 					TRUE
 				);
 			}
